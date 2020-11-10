@@ -1,5 +1,5 @@
 ﻿Install-Module -Name Az.CosmosDB -AllowClobber
-
+#vikash
 Connect-AzAccount
 Select-AzSubscription -SubscriptionID  '8d9342fa-1e52-4e0c-9e03-1d32fc27db06'
 
