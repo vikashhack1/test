@@ -1,0 +1,192 @@
+ EtwHighPriority
+| where TIMESTAMP > ago(1h) 
+| where Region == 'Australia Central 2'and  EventMessage contains 'error'
+
+let subID = "a3463f52-da99-49bd-86ac-3ccd110e834d";
+EtwSubscriptionIdAccountNameAccountId 
+| where TIMESTAMP > ago(2h)
+| where subscriptionId == subID
+| summarize max(TIMESTAMP) by accountName, accountId, SourceMoniker 
+| parse SourceMoniker with "CdmOaasMoniker" Region
+| sort by max_TIMESTAMP asc
+
+
+EtwJobCompletedOnWorker
+| where TIMESTAMP > ago(1d)
+| where SourceNamespace contains "cbr2"
+| where accountName == "System"
+
+EtwBillingPostedForAzureCustomer
+| where TIMESTAMP > ago(1h)
+| where SourceNamespace contains "cbr2"
+
+
+EtwAll
+| where TIMESTAMP > ago(1h)
+| where Role == "RunbookWorker.Cloud" and Region == 'Australia Central 2'
+| where TaskName == "SandboxFailedJobAction"
+| where EventMessage contains "Invalid interpreter executable path"
+| summarize count() by Region
+| where Region !in ("Switzerland West","Japan West","Australia Central 2","Australia Central 2")
+
+
+let expectedInstanceCount = (
+EtwAll
+| where TIMESTAMP > ago(2d)
+| where Role == "RunbookWorker.Cloud"
+| where TaskName == 'QueueReadOperationCompleted'
+| where EventMessage contains "commonqueue"
+| parse EventMessage with *". [queueName=" queueName "]"*
+| where queueName !contains 'test'
+| summarize instances = dcount(RoleInstance) by bin(TIMESTAMP, 15m), SourceNamespace
+| summarize expectedInstanceCount = max(instances) by SourceNamespace
+);
+let currentInstaceCount = (
+EtwAll
+| where TIMESTAMP > ago(45m) // higher value to accomodate delay of logs and to reduce false alarams
+| where Role == "RunbookWorker.Cloud"
+| where TaskName == 'QueueReadOperationCompleted'
+| where EventMessage contains "commonqueue"
+| parse EventMessage with *". [queueName=" queueName "]"*
+| where queueName !contains 'test'
+| summarize currentInstanceCount = dcount(RoleInstance) by SourceNamespace
+| project currentInstanceCount, SourceNamespace
+);
+expectedInstanceCount 
+| join currentInstaceCount on SourceNamespace
+| where currentInstanceCount < expectedInstanceCount
+| project SourceNamespace, expectedInstanceCount, currentInstanceCount
+
+
+
+EtwAll
+| where TIMESTAMP > ago(8d)
+//| where Role == 'Orchestrator.Web.Cloud'
+| where ActivityId == "b50d82ad-d0e0-4e1d-ab69-f212d827e833"
+| order by TIMESTAMP asc 
+
+EtwHighPriority
+| where TIMESTAMP > ago(1h) 
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'billing'
+
+EtwHighPriority
+| where TIMESTAMP > ago(1h) 
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'Exception occured while certificate '
+
+
+EtwHighPriority
+| where TIMESTAMP > ago(10m) 
+| where Region contains 'Australia Central 2'
+
+
+let StartTime = datetime(11/12/2020 04:59:00);
+let EndTime = datetime(11/12/2020 05:26:00);
+EtwHighPriority
+| where TIMESTAMP between (StartTime..EndTime)
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'error'
+
+
+
+2d710696-f76f-4af8-a1d4-90caa4e4da6a
+
+EtwAll
+| where TIMESTAMP > ago(1h) 
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'region-test-aa29d4'
+
+
+EtwAll
+| where TIMESTAMP > ago(10m) and Role contains "agent"
+| where Region contains 'Australia Central 2'
+
+
+EtwAll
+| where TIMESTAMP > ago(30m) and Role contains "webhook"
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'region-test-aa29d4'
+
+EtwOutgoingWebRequest
+| where TIMESTAMP > ago(30m)
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'asasasa232'
+
+EtwAll
+| where TIMESTAMP > ago(10m) and Role contains "webhook" 
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'asasasa232'
+
+JRDSEtwHighPriority
+| where TIMESTAMP > ago(1d) 
+| where Region contains 'Australia Central 2'
+
+JRDSEtwAll
+| where TIMESTAMP > ago(1h) 
+| where Region contains 'Australia Central 2'
+
+
+EtwHighPriority
+| where TIMESTAMP > ago(1d) and Role contains "agent" 
+| where Region contains 'Australia Central 2'
+| where EventMessage contains 'System.Threading.Tasks.TaskCanceledException'
+
+
+EtwAll
+| where TIMESTAMP > ago(10m) and Role contains "agent" 
+| where Region contains 'Australia Central 2'
+
+EtwBillingPostedForAzureCustomer | where TIMESTAMP  > ago(7d) | join kind = leftouter  (EtwBillingPostedForAzureCustomer 
+| where TIMESTAMP  > ago(7d) and  meter contains "dsc"
+| summarize count() by SourceNamespace,meter)
+on $left.SourceNamespace == $right.SourceNamespace
+| distinct SourceNamespace,meter,count_
+| where count_ = isempty( count_)
+
+
+EtwBillingPostedForAzureCustomer | where TIMESTAMP  > ago(7d) | join kind = inner   (EtwBillingPostedForAzureCustomer 
+| where TIMESTAMP  > ago(7d) and  meter contains "dsc"
+| summarize count() by SourceNamespace,meter)
+on $left.SourceNamespace == $right.SourceNamespace
+| distinct SourceNamespace,meter,count_
+
+let subID = "a3463f52-da99-49bd-86ac-3ccd110e834d";
+EtwSubscriptionIdAccountNameAccountId 
+| where TIMESTAMP > ago(1d)
+| where subscriptionId == subID
+| summarize max(TIMESTAMP) by accountName, accountId, SourceMoniker 
+| parse SourceMoniker with "CdmOaasMoniker" Region
+| sort by max_TIMESTAMP asc
+
+
+IISW3CLogs 
+| where TIMESTAMP >= ago(30m)   
+| where Role != "WebhookService.Invocation" and Role != "AgentServer"
+| where SourceNamespace !contains "EAP" 
+| where cs_uri_stem !contains "f5c25c0b-39d1-48b7-a644-c1f6b4d83b49" 
+and cs_uri_stem !contains "c7714b8e-0d72-4430-9989-76684a5302f5" 
+and cs_uri_stem !contains "e2dd051e-8f42-4b8c-84ba-73d5665101cf" 
+and cs_uri_stem  !contains 'fad12353-b08b-4a7e-b3d9-a7e7840a6a6b' 
+and cs_uri_stem  !contains  "b470854d-92f5-4aab-88d5-d0a3d6ce2750"
+and cs_uri_stem !contains "5faf4d3a-fd29-4437-92f1-132d6553050e"// Temp removal, Ref ICM: 201604379
+| summarize requests = countif(sc_status > 0), errors = countif(sc_status >= 500 ) by  SourceNamespace, Role, bin(TIMESTAMP, 10m), Region
+| where errors > 10
+| extend percentFailures = (todouble(errors)/requests)*100
+| project TIMESTAMP, percentFailures, SourceNamespace, Role, Region
+| summarize countif(percentFailures > 0.15) by SourceNamespace, Role , Region
+| project SourceNamespace, Role, countif_, Region
+| where SourceNamespace  !in~ ("OaaSWebmas1","OaaSWebmas1","OaaSWebusw3s1","OaaSWebmrs1","OaaSWebnows1","OaaSWebjinws1","OaaSWebsecs1","OaaSWebpss1","OaaSWebsess1","OaaSWebjincs1")
+
+EtwAll
+| where TIMESTAMP > ago(30m)
+| where Role == "RunbookWorker.Cloud"
+| where TaskName == "SandboxFailedJobAction"
+| where EventMessage contains "Invalid interpreter executable path"
+| summarize count() by Region
+| where Region !in~  ("Australia Central 2","South India","West US 3","France South","Norway West","Jio India West","Sweden Central","Korea South","Sweden  South","Jio India Central","Silver stone")
+
+
+
+
+
